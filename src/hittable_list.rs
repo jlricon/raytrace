@@ -4,15 +4,16 @@ use crate::{
 };
 #[derive(Default)]
 pub struct HittableList {
-    objects: Vec<Box<dyn Hittable>>,
+    objects: Vec<Hittable>,
 }
 impl HittableList {
-    pub fn clear(&mut self) {
-        self.objects.clear();
+    pub fn new(objects: Vec<Hittable>) -> HittableList {
+        HittableList { objects }
     }
-    pub fn add(&mut self, hittable: Box<dyn Hittable>) {
+    pub fn add(&mut self, hittable: Hittable) {
         self.objects.push(hittable);
     }
+
     pub fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         self.objects
             .iter()

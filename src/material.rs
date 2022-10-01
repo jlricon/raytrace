@@ -14,19 +14,21 @@ pub enum Material {
 impl Material {
     fn reflectance(cosine: f64, ref_idx: f64) -> f64 {
         // Use Schlick's approximation for reflectance.
-        let mut r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
-        r0 = r0 * r0;
-        r0 + (1.0 - r0) * (1.0 - cosine).powi(5)
+        let r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
+        let r0_square = r0.powi(2);
+        r0_square + (1.0 - r0_square) * (1.0 - cosine).powi(5)
     }
     pub fn scatter(ray: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
         match rec.material {
             Material::Lambertian { albedo } => {
-                let mut scatter_direction = rec.normal + Vec3::random_unit_vector();
+                let scatter_direction = rec.normal + Vec3::random_unit_vector();
                 // Catch degenerate scatter direction
-                if scatter_direction.near_zero() {
-                    scatter_direction = rec.normal;
-                }
-                let scattered = Ray::new(rec.p, scatter_direction);
+                let corrected_scatter_direction = if scatter_direction.near_zero() {
+                    rec.normal
+                } else {
+                    scatter_direction
+                };
+                let scattered = Ray::new(rec.p, corrected_scatter_direction);
                 Some((albedo, scattered))
             }
             Material::Metal { albedo, fuzz } => {
@@ -45,7 +47,7 @@ impl Material {
                 // Total internal reflection handling
                 let cos_theta = (-unit_direction).dot(&rec.normal).min(1.0);
                 let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
-                let direction = if (refraction_ratio * sin_theta > 1.0)
+                let direction = if ((refraction_ratio * sin_theta) > 1.0)
                     || (Self::reflectance(cos_theta, refraction_ratio) > random_double())
                 {
                     unit_direction.reflect(&rec.normal)

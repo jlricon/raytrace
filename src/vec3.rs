@@ -1,6 +1,6 @@
 use std::{
     iter::Sum,
-    ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub},
+    ops::{Add, Div, Mul, Neg, Sub},
 };
 
 use crate::rtweekend::{random_double, random_double_range};
@@ -13,15 +13,6 @@ pub struct Vec3 {
     pub z: f64,
 }
 
-impl AddAssign for Vec3 {
-    fn add_assign(&mut self, other: Vec3) {
-        *self = Vec3 {
-            x: self.x + other.x,
-            y: self.y + other.y,
-            z: self.z + other.z,
-        };
-    }
-}
 impl Sum for Vec3 {
     fn sum<I: Iterator<Item = Vec3>>(iter: I) -> Vec3 {
         iter.fold(Vec3::default(), |a, b| a + b)
@@ -37,7 +28,7 @@ impl Mul<Vec3> for f64 {
         }
     }
 }
-impl const Div<f64> for Vec3 {
+impl Div<f64> for Vec3 {
     type Output = Vec3;
     fn div(self, other: f64) -> Vec3 {
         Vec3 {
@@ -78,16 +69,6 @@ impl Neg for Vec3 {
     }
 }
 
-impl MulAssign<f64> for Vec3 {
-    fn mul_assign(&mut self, other: f64) {
-        *self = Vec3 {
-            x: self.x * other,
-            y: self.y * other,
-            z: self.z * other,
-        };
-    }
-}
-
 impl Add for Vec3 {
     type Output = Vec3;
     fn add(self, other: Vec3) -> Vec3 {
@@ -98,7 +79,7 @@ impl Add for Vec3 {
         }
     }
 }
-impl const Sub for Vec3 {
+impl Sub for Vec3 {
     type Output = Vec3;
     fn sub(self, other: Vec3) -> Vec3 {
         Vec3 {
@@ -109,14 +90,18 @@ impl const Sub for Vec3 {
     }
 }
 impl Vec3 {
-    pub const fn new(x: f64, y: f64, z: f64) -> Vec3 {
-        Vec3 { x, y, z }
+    pub fn new<T: Into<f64>>(x: T, y: T, z: T) -> Vec3 {
+        Vec3 {
+            x: x.into(),
+            y: y.into(),
+            z: z.into(),
+        }
     }
-    fn length(&self) -> f64 {
-        self.squared_length().sqrt()
+    pub fn length(&self) -> f64 {
+        self.dot(self).sqrt()
     }
     pub fn squared_length(&self) -> f64 {
-        self.x * self.x + self.y * self.y + self.z * self.z
+        self.dot(self)
     }
     pub fn unit_vector(&self) -> Vec3 {
         let k = 1.0 / self.length();
@@ -126,7 +111,7 @@ impl Vec3 {
             z: self.z * k,
         }
     }
-    fn cross(&self, other: &Vec3) -> Vec3 {
+    pub fn cross(&self, other: &Vec3) -> Vec3 {
         Vec3 {
             x: self.y * other.z - self.z * other.y,
             y: self.z * other.x - self.x * other.z,
@@ -163,7 +148,7 @@ impl Vec3 {
         Vec3::random_in_unit_sphere().unit_vector()
     }
     pub fn near_zero(&self) -> bool {
-        const S: f64 = 1e-8;
+        const S: f64 = f64::EPSILON;
         self.x.abs() < S && self.y.abs() < S && self.z.abs() < S
     }
     pub fn reflect(&self, n: &Vec3) -> Vec3 {
@@ -172,7 +157,20 @@ impl Vec3 {
     pub fn refract(&self, n: &Vec3, etai_over_etat: f64) -> Vec3 {
         let cos_theta = (-*self).dot(n).min(1.0);
         let r_out_perp = etai_over_etat * (*self + cos_theta * *n);
-        let r_out_parallel = -(1.0 - r_out_perp.squared_length()).abs().sqrt() * *n;
+        let r_out_parallel = -((1.0 - r_out_perp.squared_length()).abs()).sqrt() * *n;
         r_out_perp + r_out_parallel
+    }
+    pub fn random_in_unit_disk() -> Vec3 {
+        loop {
+            let p = Vec3::new(
+                random_double_range(-1.0, 1.0),
+                random_double_range(-1.0, 1.0),
+                0.0,
+            );
+            if p.squared_length() >= 1.0 {
+                continue;
+            }
+            return p;
+        }
     }
 }
