@@ -9,8 +9,8 @@ use crate::{
     vec3::{Color, Vec3},
 };
 
+use rand::Rng;
 use std::f64::INFINITY;
-
 mod camera;
 mod color;
 mod hittable;
@@ -100,7 +100,7 @@ fn main() {
     const ASPECT_RATIO: f64 = 3.0 / 2.0;
     const IMAGE_WIDTH: i32 = 1200;
     const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
-    const SAMPLES_PER_PIXEL: i32 = 500;
+    const SAMPLES_PER_PIXEL: i32 = 20;
     // World
 
     // let material_ground = Material::Lambertian {
@@ -145,22 +145,27 @@ fn main() {
     );
 
     // Render
-
     println!("P3\n{} {}\n255\n", IMAGE_WIDTH, IMAGE_HEIGHT);
     (0..IMAGE_HEIGHT).rev().for_each(|j| {
         eprintln!("Scanlines remaining: {}", j);
         let pixel_colors: Vec<Color> = (0..IMAGE_WIDTH)
             .into_par_iter()
-            .map(|i| {
-                (0..SAMPLES_PER_PIXEL)
-                    .map(|_| {
-                        let u = (i as f64 + rtweekend::random_double()) / (IMAGE_WIDTH - 1) as f64;
-                        let v = (j as f64 + rtweekend::random_double()) / (IMAGE_HEIGHT - 1) as f64;
-                        let r = cam.get_ray(u, v);
-                        ray_color(&r, &world, MAX_DEPTH)
-                    })
-                    .sum()
-            })
+            .map_init(
+                || rand::thread_rng(),
+                |rng, i| {
+                    (0..SAMPLES_PER_PIXEL)
+                        .map(|_| {
+                            let u = (i as f64 + rng.gen::<f64>()) / (IMAGE_WIDTH - 1) as f64;
+
+                            let v = (j as f64 + rng.gen::<f64>()) / (IMAGE_HEIGHT - 1) as f64;
+
+                            let r = cam.get_ray(u, v);
+                            ray_color(&r, &world, MAX_DEPTH)
+                        })
+                        .sum()
+                },
+            )
+            // .map(|i| {
             .collect();
         pixel_colors
             .iter()
