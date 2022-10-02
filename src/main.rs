@@ -1,3 +1,4 @@
+use itertools::iproduct;
 use rayon::prelude::*;
 
 use crate::{
@@ -20,7 +21,30 @@ mod ray;
 mod rtweekend;
 
 mod vec3;
+fn indras_net() -> HittableList {
+    let mut world = HittableList::new(Vec::new());
+    // let ground_material = Material::Lambertian {
+    //     albedo: Color::new(0.5, 0.5, 0.5),
+    // };
+    // world.add(Hittable::Sphere {
+    //     center: Vec3::new(0.0, -1000.0, 0.0),
+    //     radius: 1000.0,
+    //     material: ground_material,
+    // });
+    let material1 = Material::Metal {
+        albedo: Color::new(0.7, 0.7, 0.7),
+        fuzz: 0.0,
+    };
+    for (i, j, k) in iproduct!(-10..10, -10..10, -10..10) {
+        world.add(Hittable::Sphere {
+            center: Vec3::new(i, j, k),
+            radius: 0.25,
+            material: material1,
+        });
+    }
 
+    return world;
+}
 fn random_scene() -> HittableList {
     let mut world = HittableList::new(Vec::new());
     let ground_material = Material::Lambertian {
@@ -100,7 +124,7 @@ fn main() {
     const ASPECT_RATIO: f64 = 3.0 / 2.0;
     const IMAGE_WIDTH: i32 = 1200;
     const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
-    const SAMPLES_PER_PIXEL: i32 = 20;
+    const SAMPLES_PER_PIXEL: i32 = 50;
     // World
 
     // let material_ground = Material::Lambertian {
@@ -124,7 +148,7 @@ fn main() {
     // ];
     // let world = HittableList::new(to_add);
 
-    let world = random_scene();
+    let world = indras_net();
 
     // Camera
     const MAX_DEPTH: i32 = 50;
